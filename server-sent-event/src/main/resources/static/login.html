@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Notification Test Page</title>
+</head>
+<body>
+<input type="text" id="userId"/>
+<button type="button" onclick="login()">로그인</button>
+</body>
+</html>
+<script type="text/javaScript">
+  function login() {
+    const userId = document.getElementById('userId').value;
+
+    const eventSource = new EventSource(`/subscribe/` + userId);
+
+    eventSource.addEventListener("sse", function (event) {
+      console.log(event.data);
+
+      const data = JSON.parse(event.data);
+
+      (async () => {
+        // 브라우저 알림
+        const showNotification = () => {
+          console.log("2")
+          const notification = new Notification('연결 되었습니다.', {
+            body: data.content
+          });
+
+          setTimeout(() => {
+            notification.close();
+          }, 3 * 1000);
+
+          // notification.addEventListener('click', () => {
+          //   window.open(data.url, '_blank');
+          // });
+        }
+
+        // 브라우저 알림 허용 권한
+        let granted = false;
+
+        if (Notification.permission === 'granted') {
+          granted = true;
+        } else if (Notification.permission !== 'denied') {
+          let permission = await Notification.requestPermission();
+          granted = permission === 'granted';
+        }
+
+        // 알림 보여주기
+        if (granted) {
+          console.log("1")
+          showNotification();
+        }
+      })();
+    })
+  }
+</script>
