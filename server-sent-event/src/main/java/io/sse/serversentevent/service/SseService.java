@@ -40,6 +40,7 @@ public class SseService {
             events.entrySet().stream()
                     .filter(entry -> lastEventId.compareTo(entry.getKey()) < 0)
                     .forEach(entry -> sendToClient(emitter, entry.getKey(), entry.getValue()));
+            //TODO: 유실된 데이터를 전송 후 eventCache를 삭제하는 로직이 필요할거같다.
         }
 
         return emitter;
@@ -56,7 +57,8 @@ public class SseService {
                     .data(jsonData));
         } catch (IOException exception) {
             emitterRepository.deleteById(emitterId);
-            throw new RuntimeException("연결 오류!");
+            emitter.completeWithError(exception);
+//            throw new RuntimeException("연결 오류!");
         }
     }
 
