@@ -19,7 +19,7 @@ public class SseService {
     private final EmitterRepository emitterRepository;
 
 
-    public SseEmitter subscribe(Long userId, String lastEventId) {
+    public SseEmitter subscribe(String userId, String lastEventId) {
         // 1
         String emitterId = userId + "_" + System.currentTimeMillis();
 
@@ -27,20 +27,29 @@ public class SseService {
         SseEmitter emitter = emitterRepository.save(emitterId, new SseEmitter(DEFAULT_TIMEOUT));
 
         emitter.onCompletion(() -> emitterRepository.deleteById(emitterId));
-        emitter.onTimeout(() -> emitterRepository.deleteById(emitterId));
+        emitter.onTimeout(() -> {
+            emitterRepository.deleteById(emitterId);
+            emitter.complete();
+        });
+        emitter.onError(callback -> {
+            emitterRepository.deleteById(emitterId);
+            emitter.complete();
+        });
 
         // 3
         // 503 에러를 방지하기 위한 더미 이벤트 전송
-        sendToClient(emitter, emitterId, "{\"userId\":" + userId + "}");
+        sendToClient(emitter, emitterId, "dummy");
 
         // 4
         // 클라이언트가 미수신한 Event 목록이 존재할 경우 전송하여 Event 유실을 예방
         if (!lastEventId.isEmpty()) {
-            Map<String, Object> events = emitterRepository.findAllEventCacheStartWithId(String.valueOf(userId));
+            Map<String, Object> events = emitterRepository.findAllEventCacheStartWithId(userId);
             events.entrySet().stream()
                     .filter(entry -> lastEventId.compareTo(entry.getKey()) < 0)
-                    .forEach(entry -> sendToClient(emitter, entry.getKey(), entry.getValue()));
-            //TODO: 유실된 데이터를 전송 후 eventCache를 삭제하는 로직이 필요할거같다.
+                    .forEach(entry -> {
+                        sendToClient(emitter, entry.getKey(), entry.getValue());
+                        //TODO: 유실된 데이터를 전송 후 eventCache를 삭제하는 로직이 필요할거같다.
+                    });
         }
 
         return emitter;
@@ -64,15 +73,15 @@ public class SseService {
 
     /**
      * 실제로 알림을 보내고 싶은 로직에서 send 메서드를 호출해주면 된다.
-     * @param receiver 알림을 받는사람
+     * @param userId 알림을 받는사람
      * @param sendData 전달할 데이터
      * @param content 알림 내용
      */
-    public void send(String receiver, String sendData, String content) {
-        Notification notification = createNotification(receiver, sendData, content);
+    public void send(String userId, String sendData, String content) {
+        Notification notification = createNotification(userId, sendData, content);
 
         // 로그인 한 유저의 SseEmitter 모두 가져오기
-        Map<String, SseEmitter> sseEmitters = emitterRepository.findAllStartWithById(receiver);
+        Map<String, SseEmitter> sseEmitters = emitterRepository.findAllStartWithById(userId);
         sseEmitters.forEach(
                 (key, emitter) -> {
                     // 데이터 캐시 저장(유실된 데이터 처리하기 위함)
@@ -83,9 +92,9 @@ public class SseService {
         );
     }
 
-    private Notification createNotification(String receiver, String sendData, String content) {
+    private Notification createNotification(String userId, String sendData, String content) {
         return Notification.builder()
-                .receiver(receiver)
+                .userId(userId)
                 .sendData(sendData)
                 .content(content)
                 .build();

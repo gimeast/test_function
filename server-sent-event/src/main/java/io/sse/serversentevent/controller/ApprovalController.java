@@ -7,6 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequiredArgsConstructor
 public class ApprovalController {
@@ -14,17 +17,18 @@ public class ApprovalController {
     private final ApprovalService approvalService;
 
     /**
-     * 전자결재 상신
-     * @param receiver
-     * @param sendData
-     * @return
+     * sse 통신 테스트를 위한 api
+     * @param userId
+     * @param requestData
+     * @return ResponseEntity
      */
     @PostMapping(value = "/approval")
-    public ResponseEntity<Void> create(String receiver, String sendData) {
-        String approvalIdx = approvalService.createApproval(receiver, sendData);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .header("Location", "/approval/" + approvalIdx)
-                .build();
+    public ResponseEntity<Map<String, Object>> create(String userId, String requestData) {
+        Map<String, Object> body = new HashMap<>();
+        Long approvalIdx = approvalService.createApproval(userId, requestData);
+        body.put("approvalIdx", approvalIdx);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
     }
 
 }

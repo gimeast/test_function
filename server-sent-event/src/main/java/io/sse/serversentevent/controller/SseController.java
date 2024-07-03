@@ -2,11 +2,15 @@ package io.sse.serversentevent.controller;
 
 import io.sse.serversentevent.service.SseService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,10 +25,13 @@ public class SseController {
      * @return
      */
     @GetMapping(value = "/subscribe/{userId}", produces = "text/event-stream")
-    public SseEmitter subscribe(
-            @PathVariable Long userId,
+    public ResponseEntity<SseEmitter> subscribe(
+            @PathVariable String userId,
             @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId) {
-        return sseService.subscribe(userId, lastEventId);
+//        return sseService.subscribe(userId, lastEventId);
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "event-stream", StandardCharsets.UTF_8))
+                .body(sseService.subscribe(userId, lastEventId));
     }
 
 }
