@@ -6,14 +6,12 @@ import lombok.Builder;
 public class Notification {
 
     private String userId;
-    private String sendData;
-    private String content;
+    private String data;
 
     @Builder
-    public Notification(String userId, String sendData, String content) {
+    public Notification(String userId, String data) {
         this.userId = userId;
-        this.sendData = sendData;
-        this.content = content;
+        this.data = data;
     }
 
 }

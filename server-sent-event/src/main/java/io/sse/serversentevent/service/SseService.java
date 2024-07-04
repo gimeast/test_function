@@ -42,6 +42,7 @@ public class SseService {
 
         // 4
         // 클라이언트가 미수신한 Event 목록이 존재할 경우 전송하여 Event 유실을 예방
+        /*
         if (!lastEventId.isEmpty()) {
             Map<String, Object> events = emitterRepository.findAllEventCacheStartWithId(userId);
             events.entrySet().stream()
@@ -51,7 +52,9 @@ public class SseService {
                         //TODO: 유실된 데이터를 전송 후 eventCache를 삭제하는 로직이 필요할거같다.
                     });
         }
-
+        */
+        Map<String, SseEmitter> sseEmitters = emitterRepository.findAllStartWithById(userId);
+        System.out.println("subscribe sseEmitters.size() = " + sseEmitters.size());
         return emitter;
     }
 
@@ -64,24 +67,28 @@ public class SseService {
                     .id(emitterId)
                     .name("sse")
                     .data(jsonData));
+
+            //정상적으로 전송되면 eventCache를 삭제한다.
+            emitterRepository.deleteAllEventCacheStartWithId(emitterId);
         } catch (IOException exception) {
+//            emitter.completeWithError(exception);
+            //send할때 에러가 발생하면 에미터를 종료하고 삭제한다.
+            emitter.complete();
             emitterRepository.deleteById(emitterId);
-            emitter.completeWithError(exception);
-//            throw new RuntimeException("연결 오류!");
         }
     }
 
     /**
      * 실제로 알림을 보내고 싶은 로직에서 send 메서드를 호출해주면 된다.
      * @param userId 알림을 받는사람
-     * @param sendData 전달할 데이터
-     * @param content 알림 내용
+     * @param data 전달할 데이터
      */
-    public void send(String userId, String sendData, String content) {
-        Notification notification = createNotification(userId, sendData, content);
+    public void send(String userId, String data) {
+        Notification notification = createNotification(userId, data);
 
         // 로그인 한 유저의 SseEmitter 모두 가져오기
         Map<String, SseEmitter> sseEmitters = emitterRepository.findAllStartWithById(userId);
+        System.out.println("send sseEmitters.size() = " + sseEmitters.size());
         sseEmitters.forEach(
                 (key, emitter) -> {
                     // 데이터 캐시 저장(유실된 데이터 처리하기 위함)
@@ -92,11 +99,10 @@ public class SseService {
         );
     }
 
-    private Notification createNotification(String userId, String sendData, String content) {
+    private Notification createNotification(String userId, String data) {
         return Notification.builder()
                 .userId(userId)
-                .sendData(sendData)
-                .content(content)
+                .data(data)
                 .build();
     }
 

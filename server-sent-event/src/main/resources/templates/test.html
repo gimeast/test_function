@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Approval API</title>
+</head>
+<body>
+<form id="approvalForm">
+    <label for="userId">User ID:</label><br>
+    <input type="text" id="userId" name="userId"><br>
+    <label for="requestData">Request Data:</label><br>
+    <input type="text" id="requestData" name="requestData"><br>
+    <input type="submit" value="Submit">
+</form>
+<script>
+    document.getElementById('approvalForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        let userId = document.getElementById('userId').value;
+        let requestData = document.getElementById('requestData').value;
+
+        let response = await fetch(`/approval?userId=${userId}&requestData=${requestData}`, {
+            method: 'POST',
+        });
+
+        if (!response.ok) {
+            console.log(`An error occurred: ${response.status} ${response.statusText}`);
+        } else {
+            let json = await response.json();
+            console.log(`Approval Index: ${json.approvalIdx}`);
+        }
+    });
+</script>
+</body>
+</html>

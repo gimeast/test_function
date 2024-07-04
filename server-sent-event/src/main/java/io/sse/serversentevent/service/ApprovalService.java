@@ -24,7 +24,7 @@ public class ApprovalService {
         //...
         approvalIdx = new Random().nextLong(100); //저장된 전자결재의 IDX
 
-        sseService.send(userId, requestData, "전자결재가 도착하였습니다.");
+        sseService.send(userId, requestData);
 
         return approvalIdx;
     }

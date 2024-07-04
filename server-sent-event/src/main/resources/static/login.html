@@ -18,6 +18,8 @@
     eventSource.addEventListener("sse", function (event) {
       const data = JSON.parse(event.data);
       console.log('data:{}', data);
-    })
+    });
+
+    window.location.href = '/test'; // 페이지가 /test 로 리다이렉트
   }
 </script>
